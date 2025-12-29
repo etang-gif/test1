@@ -3,224 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <title>Home Vocabulary Memory Game</title>
-
 <style>
 body {
   font-family: Arial, sans-serif;
   text-align: center;
   background: #f4f6f8;
 }
-
 h1 { margin-bottom: 10px; }
-
-.setup input {
-  padding: 6px;
-  margin: 5px;
-  font-size: 16px;
-}
-
-button {
-  padding: 8px 14px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.info {
-  margin: 15px;
-  font-size: 18px;
-}
-
+.setup input { padding:6px; margin:5px; font-size:16px; }
+button { padding:8px 14px; font-size:16px; cursor:pointer; }
+.info { margin:15px; font-size:18px; }
 .board {
-  display: grid;
-  grid-template-columns: repeat(4, 140px);
-  gap: 12px;
-  justify-content: center;
+  display:grid;
+  grid-template-columns:repeat(4, 140px);
+  gap:12px;
+  justify-content:center;
 }
-
 .card {
-  width: 140px;
-  height: 100px;
-  background: #4a90e2;
-  color: white;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 18px;
-  user-select: none;
+  width:140px;
+  height:100px;
+  background:#4a90e2;
+  color:white;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:18px;
+  user-select:none;
 }
-
-.card img {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 6px;
-}
-
-.flipped {
-  background: white;
-  color: black;
-  border: 2px solid #4a90e2;
-}
-
-.matched {
-  background: #7ed321;
-  cursor: default;
-}
-</style>
-</head>
-
-<body>
-
-<h1>🏠 Home Vocabulary Memory Game</h1>
-
-<div class="setup">
-  Player 1 name:
-  <input id="name1" value="Player 1">
-  Player 2 name:
-  <input id="name2" value="Player 2">
-  <br><br>
-  <button onclick="startGame()">Start Game</button>
-</div>
-
-<div class="info" id="info" style="display:none;">
-  <strong id="p1name"></strong>: <span id="score1">0</span> |
-  <strong id="p2name"></strong>: <span id="score2">0</span>
-  <br>
-  👉 Turn: <strong id="turnName"></strong>
-</div>
-
-<div class="board" id="board"></div>
-
-<script>
-const pairs = [
-  {word:"stairs", img:"images/stairs.jpg"},
-  {word:"swimming pool", img:"images/swimmingpool.jpg"},
-  {word:"bathroom", img:"images/bathroom.jpg"},
-  {word:"living room", img:"images/livingroom.jpg"},
-  {word:"kitchen", img:"images/kitchen.jpg"},
-  {word:"garage", img:"images/garage.jpg"},
-  {word:"hall", img:"images/hall.jpg"},
-  {word:"balcony", img:"images/balcony.jpg"},
-  {word:"bedroom", img:"images/bedroom.jpg"},
-  {word:"deck", img:"images/deck.jpg"},
-  {word:"front porch", img:"images/frontporch.jpg"},
-  {word:"front yard", img:"images/frontyard.jpg"},
-  {word:"backyard", img:"images/backyard.jpg"},
-  {word:"driveway", img:"images/driveway.jpg"}
-];
-
-let cards = [];
-let firstCard = null;
-let secondCard = null;
-let lockBoard = false;
-let currentPlayer = 1;
-let scores = {1: 0, 2: 0};
-let playerNames = {};
-
-function speakWord(text) {
-  if (!('speechSynthesis' in window)) return;
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  utterance.rate = 0.9;
-  utterance.pitch = 1;
-  speechSynthesis.speak(utterance);
-}
-
-function startGame() {
-  playerNames[1] = document.getElementById("name1").value || "Player 1";
-  playerNames[2] = document.getElementById("name2").value || "Player 2";
-
-  document.querySelector(".setup").style.display = "none";
-  document.getElementById("info").style.display = "block";
-
-  document.getElementById("p1name").textContent = playerNames[1];
-  document.getElementById("p2name").textContent = playerNames[2];
-  document.getElementById("turnName").textContent = playerNames[currentPlayer];
-
-  createBoard();
-}
-
-function createBoard() {
-  const board = document.getElementById("board");
-  board.innerHTML = "";
-  cards = [];
-
-  pairs.forEach(pair => {
-    cards.push({type:"word", value:pair.word, match:pair.word});
-    cards.push({type:"image", value:pair.img, match:pair.word});
-  });
-
-  cards.sort(() => Math.random() - 0.5);
-
-  cards.forEach(cardData => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.dataset.match = cardData.match;
-    card.dataset.type = cardData.type;
-    card.textContent = "?";
-
-    card.onclick = () => flipCard(card, cardData);
-    board.appendChild(card);
-  });
-}
-
-function flipCard(card, cardData) {
-  if (lockBoard || card.classList.contains("flipped")) return;
-
-  card.classList.add("flipped");
-
-  if (cardData.type === "word") {
-    card.textContent = cardData.value;
-    speakWord(cardData.value);
-  } else {
-    card.innerHTML = "";
-    const img = document.createElement("img");
-    img.src = cardData.value;
-    card.appendChild(img);
-  }
-
-  if (!firstCard) {
-    firstCard = card;
-  } else {
-    secondCard = card;
-    lockBoard = true;
-    setTimeout(checkMatch, 900);
-  }
-}
-
-function checkMatch() {
-  if (firstCard.dataset.match === secondCard.dataset.match) {
-    firstCard.classList.add("matched");
-    secondCard.classList.add("matched");
-    scores[currentPlayer]++;
-    updateScores();
-  } else {
-    resetCard(firstCard);
-    resetCard(secondCard);
-    switchPlayer();
-  }
-
-  firstCard = null;
-  secondCard = null;
-  lockBoard = false;
-}
-
-function resetCard(card) {
-  card.classList.remove("flipped");
-  card.innerHTML = "?";
-}
-
-function switchPlayer() {
-  currentPlayer = currentPlayer === 1 ? 2 : 1;
-  document.getElementById("turnName").textContent = playerNames[currentPlayer];
-}
-
-function updateScores() {
-  document.getElementById("score1").textContent = scores[1];
-  document.getElementById("score2").textContent = scores[2];
-}
-</script>
-
-</body>
-</html>
+.card img { max-width:100%; max-height:100%; border-radius:6px; }
+.flipped { background:white;
